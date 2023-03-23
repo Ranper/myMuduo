@@ -17,8 +17,11 @@ EventLoop *CheckLoopNotNull(EventLoop *loop)
 TcpServer::TcpServer(EventLoop *loop, const InetAddress &listenaddr, const string &name, Option option)
     : loop_(CheckLoopNotNull(loop)), ip_port_(listenaddr.get_ip_port()), name_(name), acceptor_(new Acceptor(loop, listenaddr, option == k_reuse_port)), thread_pool_(new EventLoopThreadPool(loop, name_)), connection_callback_(), message_callback_(), next_conn_id_(1), started_(0)
 {
+    /**
+     * 这里 bind 的意义,表示传入的时候当前 tcpserver 对象的 new_connection 成员函数
+    */
     //当有新连接会执行new_connection
-    acceptor_->set_new_connection_callback(bind(&TcpServer::new_connection, this, _1, _2));
+    acceptor_->set_new_connection_callback(bind(&TcpServer::new_connection, this, _1, _2));  // 绑定, 在有新连接过来的时候, 调用 tcpserver 的 new_connection 函数
 }
 TcpServer::~TcpServer()
 {
@@ -27,7 +30,7 @@ TcpServer::~TcpServer()
         TcpConnectionPtr conn(it.second); //出右括号，这个局部shared_ptr智能只针对新，出右括号，自动释放new出来的tcpconnection对象
         it.second.reset();
 
-        conn->get_loop()->run_in_loop(bind(&TcpConnection::destory_connect, conn));
+        conn->get_loop()->run_in_loop(bind(&TcpConnection::destory_connect, conn));  // 类的成员函数, 第一个参数为该类的指针
     }
 }
 
@@ -51,7 +54,8 @@ void TcpServer::start()
 void TcpServer::new_connection(int sockfd, const InetAddress &peeraddr)
 {
     //轮询算法，选择一个subloop管理channel
-    EventLoop *ioloop = thread_pool_->get_nextEventLoop();
+    // 从sub_reactor 中轮询一个reactor处理 本次请求
+    EventLoop *ioloop = thread_pool_->get_nextEventLoop(); // 所以 thread_pool 里面是 sub_reactor
 
     char buffer[BUFFER_SIZE64] = {0};
     snprintf(buffer, sizeof(buffer), "-%s#%d", ip_port_.c_str(), next_conn_id_);
@@ -72,7 +76,7 @@ void TcpServer::new_connection(int sockfd, const InetAddress &peeraddr)
     InetAddress localaddr(local);
 
     //根据连接成功的sockfd，创建tcpc连接对象
-    TcpConnectionPtr conn(new TcpConnection(ioloop, conn_name, sockfd, localaddr, peeraddr));
+    TcpConnectionPtr conn(new TcpConnection(ioloop, conn_name, sockfd, localaddr, peeraddr)); // 把这个连接分配给io loop epoll
 
     connections_[conn_name] = conn;
 
@@ -83,6 +87,8 @@ void TcpServer::new_connection(int sockfd, const InetAddress &peeraddr)
 
     //设置如何关闭连接的回调
     conn->set_close_callback(bind(&TcpServer::remove_connection, this, _1));
+
+    // 然后在main loop中执行estabilsh_connect
     ioloop->run_in_loop(bind(&TcpConnection::establish_connect, conn));
 }
 

@@ -22,7 +22,7 @@ Acceptor::Acceptor(EventLoop *loop, const InetAddress &listenaddr, bool reusepor
     accept_socket_.set_reusePort(true);
     accept_socket_.bind_address(listenaddr);
 
-    accept_channel_.set_readcallback(bind(&Acceptor::handle_read, this));
+    accept_channel_.set_readcallback(bind(&Acceptor::handle_read, this));  // 注册读 事件, 当有新连接过来的时候, 处理新连接. 因为accptor只负责新连接
 }
 
 Acceptor::~Acceptor()
@@ -34,7 +34,7 @@ Acceptor::~Acceptor()
 void Acceptor::listen()
 {
     listenning_ = true;
-    accept_socket_.listen();
+    accept_socket_.listen();  // 不会阻塞, 开启监听对应的端口, 然后阻塞在accpet
 
     //借助poller进行监听
     accept_channel_.enable_reading();
@@ -48,7 +48,7 @@ void Acceptor::handle_read()
     int connfd = accept_socket_.accept(&peeraddr);
     if (connfd > 0)
     {
-        if (new_connetion_callback_)
+        if (new_connetion_callback_)  // 在这里调用tcp server的 new_connection 函数
         {
             new_connetion_callback_(connfd, peeraddr); //轮询找到subloop，唤醒，分发当前新客户端的channel
         }

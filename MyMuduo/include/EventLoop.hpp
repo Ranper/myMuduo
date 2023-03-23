@@ -60,7 +60,7 @@ private:
 
     const pid_t threadId_;       //记录当前loop所在线程id
     TimeStamp poll_return_time_; //poller返回的发生事件的时间点
-    unique_ptr<Poller> poller_;
+    unique_ptr<Poller> poller_;   // 对 select, poll, epoll的抽象
 
     int wakeup_fd;                       //当main loop获取一个新用户的channel，通过轮询算法，选择一个subloopp，通过该成员唤醒subloop，处理channel
     unique_ptr<Channel> wakeup_channel_; //包装wakefd
@@ -68,7 +68,7 @@ private:
     ChannelList active_channels; //eventloop 所管理的所有channel
 
     atomic_bool calling_pending_functors_; //标识当前loop是否有需要执行的回调操作
-    vector<Functor> pending_Functors_;     //loop所执行的所有回调操作
+    vector<Functor> pending_Functors_;     //loop所执行的所有回调操作, 当前Event loop 要执行的 pending操作
 
-    mutex functor_mutex_; //保护pending_functors
+    mutex functor_mutex_; //保护 pending_functors
 };

@@ -31,13 +31,13 @@ void Thread::start()
     thread_ = shared_ptr<thread>(new thread([&]() {
         //获取线程tid值
         tid_ = Current_thread::tid();
-        sem_post(&sem);
+        sem_post(&sem); // + 1
         //执行函数
         function_();
     }));
 
     //需要等待新创建的线程，获取其线程的id
-    sem_wait(&sem);
+    sem_wait(&sem); // -1 如果-1后<0,则阻塞
 }
 
 void Thread::join()

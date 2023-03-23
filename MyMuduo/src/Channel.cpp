@@ -3,8 +3,13 @@
 #include "EventLoop.hpp"
 #include "Logger.hpp"
 
+
+/*
+EPOLLPRI      外带数据
+There is urgent data available for read(2) operations.
+*/
 const int Channel::k_none_event_ = 0;
-const int Channel::k_read_event_ = EPOLLIN | EPOLLPRI;
+const int Channel::k_read_event_ = EPOLLIN | EPOLLPRI;  
 const int Channel::k_write_event_ = EPOLLOUT;
 
 Channel::Channel(EventLoop *loop, int fd)

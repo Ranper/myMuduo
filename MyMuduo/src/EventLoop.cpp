@@ -14,7 +14,7 @@ const int k_poll_timeout = 10000;
 int CreateEventfd()
 {
     //非阻塞且不被子进程继承
-    int event_fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    int event_fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);  // EFD_CLOEXEC 不会被子进程继承, 在执行新的文件的时候会清除父进程的文件描述符
     if (event_fd < 0)
     {
         LOG_FATAL("eventfd error:%d \n", errno);
@@ -94,7 +94,7 @@ void EventLoop::quit()
 void EventLoop::run_in_loop(Functor cb)
 {
     //在当前的loop线程中执行回调
-    if (is_in_loopThread())
+    if (is_in_loopThread())  // 比如说 main reactor 在接收到新建连接的时候,需要把 estilish 函数的处理放到 subreactor里面, 这时候就要换行 sub_reactor 了 牛逼啊
     {
         cb();
     }
@@ -161,12 +161,12 @@ void EventLoop::handle_read() //wake up
 void EventLoop::do_pending_functors()
 {
     vector<Functor> functors;
-    calling_pending_functors_ = true;
+    calling_pending_functors_ = true; // 如果在执行 pending 操作期间, 又有新的回调, 先加入队列
 
     //减少持有锁的时间
     {
         lock_guard<mutex> lock(functor_mutex_);
-        functors.swap(pending_Functors_);
+        functors.swap(pending_Functors_); // swap, 移花接木
     }
 
     for (const Functor &functor : functors)

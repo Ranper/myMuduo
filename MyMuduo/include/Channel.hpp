@@ -15,6 +15,7 @@ using ReadEventCallback = function<void(TimeStamp)>;
 /*
 *   相当于sockfd及其感兴趣event的集合
 *   绑定了poller返回的事件
+*   这个类中主要是封装了sockfd及其所感兴趣的事件，还有发生事件所要调用的回调函数。
 */
 class Channel : NonCopyable
 {
